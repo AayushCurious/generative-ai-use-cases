@@ -30,19 +30,39 @@ const region = regionMatch[1];
 // Reuse client instance outside the handler for connection pooling
 const client = new CognitoIdentityProviderClient({ region });
 
-(async () => {
+async function authenticateUser(client, clientId, username, password) {
   try {
-    const { AuthenticationResult } = await client.send(
+    const response = await client.send(
       new InitiateAuthCommand({
         AuthFlow: 'USER_PASSWORD_AUTH',
         ClientId: clientId,
-        AuthParameters: { USERNAME: username, PASSWORD: password },
+        AuthParameters: { 
+          USERNAME: username, 
+          PASSWORD: password 
+        },
       })
     );
 
-    if (!AuthenticationResult?.IdToken) {
+    // Handle Challenge Flows (e.g., MFA, New Password Required)
+    if (response.ChallengeName) {
+      throw new Error(`Authentication incomplete. Challenge encountered: ${response.ChallengeName}`);
+    }
+
+    const idToken = response.AuthenticationResult?.IdToken;
+
+    if (!idToken) {
       throw new Error('Authentication succeeded but no IdToken was returned.');
     }
+
+    return idToken;
+
+  } catch (error) {
+    // Standardize error propagation or log accordingly
+    console.error('Cognito authentication failed:', error.message);
+    throw error;
+  }
+}
+
 
     process.stdout.write(`${AuthenticationResult.IdToken}\n`);
     process.exit(0);

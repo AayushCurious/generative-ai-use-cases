@@ -56,18 +56,19 @@ async function authenticateUser(client, clientId, username, password) {
 
     return idToken;
 
-  } catch (error) {
-    // Standardize error propagation or log accordingly
-    console.error('Cognito authentication failed:', error.message);
-    throw error;
+  }   } catch (error) {
+    // Standardize error propagation
+    throw new Error(`Cognito authentication failed: ${error.message}`, { cause: error });
   }
 }
 
+    if (!AuthenticationResult?.IdToken) {
+      throw new Error("No IdToken returned from Cognito.");
+    }
 
     process.stdout.write(`${AuthenticationResult.IdToken}\n`);
-    process.exit(0);
   } catch (error) {
-    console.error(`Authentication failed: ${error.message}`);
-    process.exit(1);
+    console.error(error.message);
+    process.exitCode = 1;
   }
 })();
